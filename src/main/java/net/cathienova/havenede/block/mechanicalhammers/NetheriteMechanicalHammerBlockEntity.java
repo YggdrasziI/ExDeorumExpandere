@@ -3,6 +3,8 @@ package net.cathienova.havenede.block.mechanicalhammers;
 import net.cathienova.havenede.block.ModBlockEntities;
 import net.cathienova.havenede.config.HavenConfig;
 import net.cathienova.havenede.menu.mechanicalhammers.NetheriteMechanicalHammerMenu;
+import net.cathienova.havenede.networking.ModMessages;
+import net.cathienova.havenede.networking.packet.HammerDataSyncPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -21,9 +23,11 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import thedarkcolour.exdeorum.blockentity.AbstractMachineBlockEntity;
+import thedarkcolour.exdeorum.blockentity.helper.EnergyHelper;
 import thedarkcolour.exdeorum.blockentity.helper.ItemHelper;
 import thedarkcolour.exdeorum.loot.HammerLootModifier;
 import thedarkcolour.exdeorum.recipe.RecipeUtil;
@@ -38,10 +42,12 @@ public class NetheriteMechanicalHammerBlockEntity extends AbstractMachineBlockEn
     private static final int NOT_RUNNING = -1;
     private int progress = NOT_RUNNING;
     private float efficiency;
+    private final EnergyHelper energyHelper;
 
     public NetheriteMechanicalHammerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.NETHERITE_MECHANICAL_HAMMER.get(), pos, state, NetheriteMechanicalHammerBlockEntity::createInventory, HavenConfig.netherite_mechanical_hammer_energyStorage);
         this.efficiency = 1.0F;
+        this.energyHelper = new EnergyHelper(HavenConfig.netherite_mechanical_hammer_energyStorage);
     }
 
     private static ItemHelper createInventory(NetheriteMechanicalHammerBlockEntity entity) {
@@ -123,6 +129,7 @@ public class NetheriteMechanicalHammerBlockEntity extends AbstractMachineBlockEn
         } else {
             this.setRunning(false);
         }
+        ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(this.getEnergyStored(), this.getProgress(), this.worldPosition));
     }
 
     private HammerRecipe canFitResultIntoOutput(ItemStack input) {
@@ -182,7 +189,12 @@ public class NetheriteMechanicalHammerBlockEntity extends AbstractMachineBlockEn
                     entity.noEnergyTick();
                 }
             }
+            ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(entity.getEnergyStored(), entity.getProgress(), entity.worldPosition));
         }
+    }
+
+    public EnergyHelper getEnergyHelper() {
+        return energyHelper;
     }
 
     protected void noEnergyTick() {

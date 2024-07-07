@@ -3,11 +3,13 @@ package net.cathienova.havenede.block.mechanicalhammers;
 import net.cathienova.havenede.block.ModBlockEntities;
 import net.cathienova.havenede.config.HavenConfig;
 import net.cathienova.havenede.menu.mechanicalhammers.GoldenMechanicalHammerMenu;
+import net.cathienova.havenede.networking.ModMessages;
+import net.cathienova.havenede.networking.packet.HammerDataSyncPacket;
+import net.cathienova.havenede.networking.packet.SieveDataSyncPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -21,6 +23,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import thedarkcolour.exdeorum.blockentity.AbstractMachineBlockEntity;
@@ -88,24 +91,31 @@ public class GoldenMechanicalHammerBlockEntity extends AbstractMachineBlockEntit
     }
 
     @Override
-    protected void runMachineTick() {
+    protected void runMachineTick()
+    {
         ItemStack input = this.inventory.getStackInSlot(0);
-        if (!input.isEmpty()) {
+        if (!input.isEmpty())
+        {
             HammerRecipe recipe = this.canFitResultIntoOutput(input);
-            if (recipe != null) {
+            if (recipe != null)
+            {
                 float efficiencyMultiplier = calculateEfficiency();
                 int progressIncrement = (int) (BASE_PROGRESS_INTERVAL * efficiencyMultiplier);
                 this.progress += progressIncrement;
-                if (this.progress >= TOTAL_PROGRESS) {
+                if (this.progress >= TOTAL_PROGRESS)
+                {
                     LootContext ctx = RecipeUtil.emptyLootContext((ServerLevel) this.level);
                     int resultCount = recipe.resultAmount.getInt(ctx);
                     resultCount += HammerLootModifier.calculateFortuneBonus(this.inventory.getStackInSlot(1), ctx.getRandom(), resultCount == 0);
                     ItemStack output = this.inventory.getStackInSlot(2);
-                    if (output.isEmpty()) {
+                    if (output.isEmpty())
+                    {
                         ItemStack stack = new ItemStack(recipe.result, resultCount);
                         stack.setTag(recipe.getResultNbt());
                         this.inventory.setStackInSlot(2, stack);
-                    } else {
+                    }
+                    else
+                    {
                         output.setCount(Math.min(output.getMaxStackSize(), resultCount + output.getCount()));
                     }
 
@@ -116,13 +126,19 @@ public class GoldenMechanicalHammerBlockEntity extends AbstractMachineBlockEntit
                     this.progress = 0;
                 }
                 this.setRunning(true);
-            } else {
+            }
+            else
+            {
                 this.progress = NOT_RUNNING;
                 this.setRunning(false);
             }
-        } else {
+        }
+        else
+        {
             this.setRunning(false);
         }
+
+        ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(this.getEnergyStored(), this.getProgress(), this.worldPosition));
     }
 
     private HammerRecipe canFitResultIntoOutput(ItemStack input) {
@@ -142,7 +158,7 @@ public class GoldenMechanicalHammerBlockEntity extends AbstractMachineBlockEntit
 
     private void damageHammer(RandomSource rand) {
         ItemStack hammer = this.inventory.getStackInSlot(1);
-        if (hammer.isDamageableItem() && hammer.hurt(1, rand, (ServerPlayer) null)) {
+        if (hammer.isDamageableItem() && hammer.hurt(1, rand, null)) {
             hammer.shrink(1);
             if (hammer.isEmpty()) {
                 this.inventory.setStackInSlot(1, ItemStack.EMPTY);
@@ -182,6 +198,7 @@ public class GoldenMechanicalHammerBlockEntity extends AbstractMachineBlockEntit
                     entity.noEnergyTick();
                 }
             }
+            ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(entity.getEnergyStored(), entity.getProgress(), entity.worldPosition));
         }
     }
 

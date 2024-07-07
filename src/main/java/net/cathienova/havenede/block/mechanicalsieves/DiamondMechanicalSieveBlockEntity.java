@@ -2,6 +2,8 @@ package net.cathienova.havenede.block.mechanicalsieves;
 
 import net.cathienova.havenede.block.ModBlockEntities;
 import net.cathienova.havenede.config.HavenConfig;
+import net.cathienova.havenede.networking.ModMessages;
+import net.cathienova.havenede.networking.packet.SieveDataSyncPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -17,7 +19,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.cathienova.havenede.menu.mechanicalsieves.DiamondMechanicalSieveMenu;
+import net.minecraftforge.network.PacketDistributor;
 import thedarkcolour.exdeorum.blockentity.AbstractMachineBlockEntity;
+import thedarkcolour.exdeorum.blockentity.helper.EnergyHelper;
 import thedarkcolour.exdeorum.blockentity.helper.ItemHelper;
 import thedarkcolour.exdeorum.blockentity.logic.SieveLogic;
 import thedarkcolour.exdeorum.recipe.RecipeUtil;
@@ -28,9 +32,11 @@ public class DiamondMechanicalSieveBlockEntity extends AbstractMachineBlockEntit
     private static final int INPUT_SLOT = 0;
     public static final int MESH_SLOT = 1;
     private final SieveLogic logic = new SieveLogic(this, true);
+    private final EnergyHelper energyHelper;
 
     public DiamondMechanicalSieveBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DIAMOND_MECHANICAL_SIEVE.get(), pos, state, ItemHandler::new, HavenConfig.diamond_mechanical_sieve_energyStorage);
+        this.energyHelper = new EnergyHelper(HavenConfig.diamond_mechanical_sieve_energyStorage);
     }
 
     protected void saveAdditional(CompoundTag nbt) {
@@ -52,6 +58,14 @@ public class DiamondMechanicalSieveBlockEntity extends AbstractMachineBlockEntit
         if (this.logic.isValidInput(input)) {
             this.logic.startSifting(input.copy());
             input.shrink(1);
+        }
+        if (level != null && !level.isClientSide)
+        {
+            if (this.level.getGameTime() % 5 == 0)
+            {
+                ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new SieveDataSyncPacket(this.energy.getEnergyStored(),
+                        this.logic.getProgress(), this.worldPosition));
+            }
         }
     }
     @Override
@@ -114,6 +128,10 @@ public class DiamondMechanicalSieveBlockEntity extends AbstractMachineBlockEntit
 
     public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player pPlayer) {
         return new DiamondMechanicalSieveMenu(containerId, playerInventory, this);
+    }
+
+    public EnergyHelper getEnergyHelper() {
+        return energyHelper;
     }
 
     public SieveLogic getLogic() {

@@ -7,6 +7,7 @@ import net.cathienova.havenede.commands.ModCommands;
 import net.cathienova.havenede.config.CommonConfig;
 import net.cathienova.havenede.item.*;
 import net.cathienova.havenede.menu.ModMenu;
+import net.cathienova.havenede.networking.ModMessages;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.MinecraftForge;
@@ -44,6 +45,7 @@ public class HavenEDE
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeModTabs.register(modEventBus);
+        ModMessages.register();
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> HavenEDEClient::new);
         ModMenu.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(this);

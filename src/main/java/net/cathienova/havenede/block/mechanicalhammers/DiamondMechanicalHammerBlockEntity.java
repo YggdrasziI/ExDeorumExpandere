@@ -3,6 +3,8 @@ package net.cathienova.havenede.block.mechanicalhammers;
 import net.cathienova.havenede.block.ModBlockEntities;
 import net.cathienova.havenede.config.HavenConfig;
 import net.cathienova.havenede.menu.mechanicalhammers.DiamondMechanicalHammerMenu;
+import net.cathienova.havenede.networking.ModMessages;
+import net.cathienova.havenede.networking.packet.HammerDataSyncPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -21,9 +23,11 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import thedarkcolour.exdeorum.blockentity.AbstractMachineBlockEntity;
+import thedarkcolour.exdeorum.blockentity.helper.EnergyHelper;
 import thedarkcolour.exdeorum.blockentity.helper.ItemHelper;
 import thedarkcolour.exdeorum.loot.HammerLootModifier;
 import thedarkcolour.exdeorum.recipe.RecipeUtil;
@@ -38,10 +42,12 @@ public class DiamondMechanicalHammerBlockEntity extends AbstractMachineBlockEnti
     private static final int NOT_RUNNING = -1;
     private int progress = NOT_RUNNING;
     private float efficiency;
+    private final EnergyHelper energyHelper;
 
     public DiamondMechanicalHammerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DIAMOND_MECHANICAL_HAMMER.get(), pos, state, DiamondMechanicalHammerBlockEntity::createInventory, HavenConfig.diamond_mechanical_hammer_energyStorage);
         this.efficiency = 1.0F;
+        this.energyHelper = new EnergyHelper(HavenConfig.diamond_mechanical_hammer_energyStorage);
     }
 
     private static ItemHelper createInventory(DiamondMechanicalHammerBlockEntity entity) {
@@ -88,24 +94,31 @@ public class DiamondMechanicalHammerBlockEntity extends AbstractMachineBlockEnti
     }
 
     @Override
-    protected void runMachineTick() {
+    protected void runMachineTick()
+    {
         ItemStack input = this.inventory.getStackInSlot(0);
-        if (!input.isEmpty()) {
+        if (!input.isEmpty())
+        {
             HammerRecipe recipe = this.canFitResultIntoOutput(input);
-            if (recipe != null) {
+            if (recipe != null)
+            {
                 float efficiencyMultiplier = calculateEfficiency();
                 int progressIncrement = (int) (BASE_PROGRESS_INTERVAL * efficiencyMultiplier);
                 this.progress += progressIncrement;
-                if (this.progress >= TOTAL_PROGRESS) {
+                if (this.progress >= TOTAL_PROGRESS)
+                {
                     LootContext ctx = RecipeUtil.emptyLootContext((ServerLevel) this.level);
                     int resultCount = recipe.resultAmount.getInt(ctx);
                     resultCount += HammerLootModifier.calculateFortuneBonus(this.inventory.getStackInSlot(1), ctx.getRandom(), resultCount == 0);
                     ItemStack output = this.inventory.getStackInSlot(2);
-                    if (output.isEmpty()) {
+                    if (output.isEmpty())
+                    {
                         ItemStack stack = new ItemStack(recipe.result, resultCount);
                         stack.setTag(recipe.getResultNbt());
                         this.inventory.setStackInSlot(2, stack);
-                    } else {
+                    }
+                    else
+                    {
                         output.setCount(Math.min(output.getMaxStackSize(), resultCount + output.getCount()));
                     }
 
@@ -116,13 +129,18 @@ public class DiamondMechanicalHammerBlockEntity extends AbstractMachineBlockEnti
                     this.progress = 0;
                 }
                 this.setRunning(true);
-            } else {
+            }
+            else
+            {
                 this.progress = NOT_RUNNING;
                 this.setRunning(false);
             }
-        } else {
+        }
+        else
+        {
             this.setRunning(false);
         }
+        ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(this.getEnergyStored(), this.getProgress(), this.worldPosition));
     }
 
     private HammerRecipe canFitResultIntoOutput(ItemStack input) {
@@ -182,7 +200,12 @@ public class DiamondMechanicalHammerBlockEntity extends AbstractMachineBlockEnti
                     entity.noEnergyTick();
                 }
             }
+            ModMessages.INSTANCE.send(PacketDistributor.ALL.noArg(), new HammerDataSyncPacket(entity.getEnergyStored(), entity.getProgress(), entity.worldPosition));
         }
+    }
+
+    public EnergyHelper getEnergyHelper() {
+        return energyHelper;
     }
 
     protected void noEnergyTick() {
