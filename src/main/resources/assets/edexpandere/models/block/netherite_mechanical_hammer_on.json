@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "front": "edexpandere:block/netherite_mechanical_hammer_front_on",
+    "side": "edexpandere:block/netherite_mechanical_hammer_side",
+    "top": "edexpandere:block/netherite_mechanical_hammer_top",
+    "bottom": "edexpandere:block/netherite_mechanical_machine_bottom",
+    "particle": "#front"
+  }
+}

@@ -2,38 +2,38 @@ modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
 [[mods]]
-    modId="havenede"
+    modId="edexpandere"
     version="${mod_version}"
     displayName="${mod_name}"
     authors="${mod_authors}"
     description='''${mod_description}'''
-[[dependencies.havenede]]
+[[dependencies.edexpandere]]
     modId="forge"
     mandatory=true
     versionRange="${forge_version_range}"
     ordering="NONE"
     side="BOTH"
-[[dependencies.havenede]]
+[[dependencies.edexpandere]]
     modId="minecraft"
     mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
-[[dependencies.havenede]]
+[[dependencies.edexpandere]]
     modId="jei"
     mandatory=false
-    versionRange="[15.0.0.12,)"
+    versionRange="[15.20.0.106,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.havenede]]
+[[dependencies.edexpandere]]
     modId="jade"
     mandatory=false
-    versionRange="[11.7.0,)"
+    versionRange="[11.13.1,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.havenede]]
+[[dependencies.edexpandere]]
     modId="exdeorum"
     mandatory=true
-    versionRange="[1.39,)"
+    versionRange="[1.46,)"
     ordering="NONE"
     side="BOTH"

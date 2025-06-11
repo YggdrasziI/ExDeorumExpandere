@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:block/orientable_with_bottom",
-  "textures": {
-    "front": "havenede:block/golden_mechanical_hammer_front",
-    "side": "havenede:block/golden_mechanical_hammer_side",
-    "top": "havenede:block/golden_mechanical_hammer_top",
-    "bottom": "havenede:block/golden_mechanical_hammer_bottom"
-  }
-}
